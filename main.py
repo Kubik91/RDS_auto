@@ -153,7 +153,6 @@ def preproc_data(df_input):
 
     # ################### Clean ####################################################
     # убираем признаки которые еще не успели обработать,
-    print('--0--')
 
     df_output['bodyType'] = df_output['bodyType'].apply(set_body)
     df_output['motor'] = df_output['engineDisplacement'].apply(
