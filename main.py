@@ -9,6 +9,7 @@ import aiohttp
 import pandas as pd
 import numpy as np
 import tqdm
+from aiofile import AIOFile, Writer
 from bs4 import BeautifulSoup
 from catboost import CatBoostRegressor
 from dateutil import relativedelta
@@ -152,6 +153,7 @@ def preproc_data(df_input):
 
     # ################### Clean ####################################################
     # убираем признаки которые еще не успели обработать,
+    print('--0--')
 
     df_output['bodyType'] = df_output['bodyType'].apply(set_body)
     df_output['motor'] = df_output['engineDisplacement'].apply(
@@ -166,13 +168,14 @@ def preproc_data(df_input):
             df_output.at[index, bt] = 1
         for comp in json.loads(row['Комплектация'].replace("['", '', 1)[::-1].replace("']"[::-1], '', 1)[::-1]):
             df_output.at[index, comp['name']] = len(comp['values'])
-            if comp['name'] not in comp:
+            if comp['name'] not in COMP_ATTRS:
                 COMP_ATTRS.append(comp['name'])
 
     for b_name in BODY_TYPES:
         df_output[b_name] = df_output[b_name].fillna(0).astype(np.int)
-    for b_name in COMP_ATTRS:
-        df_output[b_name] = df_output[b_name].fillna(0).astype(np.int)
+
+    for c_name in set(COMP_ATTRS):
+        df_output[c_name] = df_output[c_name].fillna(0).astype(np.int)
 
     df_output['model'] = df_output['name'].apply(set_name)
 
@@ -216,7 +219,7 @@ COMP_ATTRS = []
 def set_complectation(x):
     globals()
     for comp in json.loads(x.replace("['", '', 1)[::-1].replace("']"[::-1], '', 1)[::-1]):
-        if comp['name'] not in comp:
+        if comp['name'] not in COMP_ATTRS:
             COMP_ATTRS.append(comp['name'])
     return x
 
@@ -355,7 +358,11 @@ async def get_item(x, all):
             pass
 
     if data is not None:
-        data.to_csv(f'files/data_{x["id"]}.csv', encoding='utf-8', index=False)
+        data_str = data.to_csv(encoding='utf-8', index=False)
+        async with AIOFile(f'files/data_{x["id"]}.csv', 'w') as afp:
+            writer = Writer(afp)
+            await writer(data_str)
+            await afp.fsync()
 
     global COUNTS, LEFT
     COUNTS += 1
