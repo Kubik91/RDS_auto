@@ -440,7 +440,6 @@ async def get_for_test_item(current_url, data=None, lvl=13):
                 new_data['price'] = int(price)
                 break
 
-        new_data['price'] = soup.find('div["data-bull-price"]')
         for title in soup.select('h1', class_='b-title b-title_type_h1 b-title_no-margin b-text-inline'):
             for brand in BRAND:
                 if brand.lower() in title.text.strip().lower():
