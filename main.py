@@ -358,7 +358,7 @@ async def get_item(x, all):
 
     if data is not None:
         data_str = data.to_csv(encoding='utf-8', index=False)
-        async with AIOFile(f'files/data_{x["id"]}.csv', 'w') as afp:
+        async with AIOFile(f'train/data_{x["id"]}.csv', 'w') as afp:
             writer = Writer(afp)
             await writer(data_str)
             await afp.fsync()
