@@ -242,7 +242,7 @@ COUNTS = 0
 LEFT = -1
 
 
-async def get_page(url):
+async def get_page(url, lvl=0):
     try:
         async with sem:
             async with aiohttp.ClientSession() as session:
@@ -250,7 +250,7 @@ async def get_page(url):
                 if response.status == 200:
                     return await response.text()
     except aiohttp.client_exceptions.ClientPayloadError:
-        return await get_page(url)
+        return await get_page(url, lvl+1) if lvl < 10 else None
 
 
 def get_url(x, lvl=0):
