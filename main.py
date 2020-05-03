@@ -433,6 +433,14 @@ async def get_for_test_item(current_url, data=None, lvl=13):
         new_data = data.copy()
         new_data['car_id'] = int(re.search(r'\d+(?=\.html)', current_url).group())
         new_data['url'] = current_url
+
+        for dv in soup.select_one('[data-bull-price]').findAll(text=True):
+            price = re.sub(r'\s', '', dv)
+            if price.isdigit():
+                new_data['price'] = int(price)
+                break
+
+        new_data['price'] = soup.find('div["data-bull-price"]')
         for title in soup.select('h1', class_='b-title b-title_type_h1 b-title_no-margin b-text-inline'):
             for brand in BRAND:
                 if brand.lower() in title.text.strip().lower():
@@ -587,6 +595,6 @@ def main(all_=True, new=True, train=True):
 
 if __name__ == '__main__':
     print('------------------------------------------------')
-    main(train=False, new=False)
+    # main(train=False, new=False)
     # get_test()
-    # get_test_item()
+    get_test_item()
