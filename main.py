@@ -595,6 +595,6 @@ def main(all_=True, new=True, train=True):
 
 if __name__ == '__main__':
     print('------------------------------------------------')
-    # main(train=False, new=False)
+    main(train=False, new=False)
     # get_test()
-    get_test_item()
+    # get_test_item()
