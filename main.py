@@ -364,6 +364,7 @@ async def get_item(x, all):
                     data = None
                     print()
                     print(e)
+                    break
 
             if data is not None:
                 data_str = data.to_csv(encoding='utf-8', index=False)
