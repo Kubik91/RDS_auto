@@ -1,6 +1,7 @@
 import asyncio
 import datetime
 import json
+import os
 import re
 import sys
 import urllib
@@ -33,6 +34,8 @@ ITERATIONS = 2000
 LR = 0.1
 
 URL = 'http://auto.drom.ru/archive/'
+
+TRAIN_FILES = []
 
 BODY_TYPES = {
     'седан': ['седан'],
@@ -316,52 +319,55 @@ async def get_page_items(response):
 
 
 async def get_item(x, all):
-    current_url = get_url(x)
-    response = await get_page(current_url)
-    all_items = []
-    lvl = 0
-    data = None
-    if response:
-        all_items = await get_page_items(response)
-        if len(all_items) < 15:
-            while len(all_items) < 15 and lvl <= 12:
-                lvl += 1
-                current_url = get_url(x, lvl)
-                response = await get_page(current_url)
-                if response:
-                    all_items = await get_page_items(response)
-                else:
-                    all_items = []
-            if len(all_items) > 50:
-                lvl -= 1
-                current_url = get_url(x, lvl)
-                response = await get_page(current_url)
-                if response:
-                    all_items = await get_page_items(response)
-                else:
-                    all_items = []
-                if len(all_items) < 10:
+    if f'data_{x["id"]}.csv' not in TRAIN_FILES:
+        current_url = get_url(x)
+        response = await get_page(current_url)
+        all_items = []
+        lvl = 0
+        data = None
+        if response:
+            all_items = await get_page_items(response)
+            if len(all_items) < 15:
+                while len(all_items) < 15 and lvl <= 12:
                     lvl += 1
                     current_url = get_url(x, lvl)
                     response = await get_page(current_url)
                     if response:
                         all_items = await get_page_items(response)
+                    else:
+                        all_items = []
+                if len(all_items) > 50:
+                    lvl -= 1
+                    current_url = get_url(x, lvl)
+                    response = await get_page(current_url)
+                    if response:
+                        all_items = await get_page_items(response)
+                    else:
+                        all_items = []
+                    if len(all_items) < 10:
+                        lvl += 1
+                        current_url = get_url(x, lvl)
+                        response = await get_page(current_url)
+                        if response:
+                            all_items = await get_page_items(response)
 
-    for item in all_items:
-        try:
-            new_data = await get_for_test_item(item, x, lvl)
-            if data is None:
-                data = pd.DataFrame(columns=new_data.keys())
-            data = data.append(new_data, ignore_index=True)
-        except Exception:
-            pass
+        for item in all_items:
+            try:
+                new_data = await get_for_test_item(item, x, lvl)
+                if data is None:
+                    data = pd.DataFrame(columns=new_data.keys())
+                if new_data is not None:
+                    data = data.append(new_data, ignore_index=True)
+            except Exception as e:
+                print()
+                print(e)
 
-    if data is not None:
-        data_str = data.to_csv(encoding='utf-8', index=False)
-        async with AIOFile(f'train/data_{x["id"]}.csv', 'w') as afp:
-            writer = Writer(afp)
-            await writer(data_str)
-            await afp.fsync()
+        if data is not None:
+            data_str = data.to_csv(encoding='utf-8', index=False)
+            async with AIOFile(f'train/data_{x["id"]}.csv', 'w') as afp:
+                writer = Writer(afp)
+                await writer(data_str)
+                await afp.fsync()
 
     global COUNTS, LEFT
     COUNTS += 1
@@ -392,6 +398,8 @@ async def get_for_tests():
 
 
 async def get_for_items(X):
+    global TRAIN_FILES
+    TRAIN_FILES = [f for f in os.listdir('train') if os.path.isfile(os.path.join('train', f))]
     print('--start--')
     responses = await asyncio.gather(*[get_item(x, len(X)) for i, x in X.iterrows()])
     print('--finish--')
@@ -414,7 +422,7 @@ def get_test():
     loop.close()
 
 
-async def get_for_test_item(current_url, data=None, lvl=13):
+async def get_for_test_item(current_url, data=None, lvl=13, count=1):
     if data is None:
         columns = ['id', 'brand', 'color', 'fuelType', 'modelDate', 'numberOfDoors',
                    'productionDate', 'vehicleTransmission', 'enginePower', 'mileage',
@@ -424,9 +432,10 @@ async def get_for_test_item(current_url, data=None, lvl=13):
                    'хэтчбек', 'Элементы экстерьера', 'Прочее', 'лифтбек', 'купе', 'пикап',
                    'минивэн', 'компактвэн', 'универсал', 'родстер', 'кабриолет', 'фургон',
                    'микровэн', 'тарга', 'лимузин', 'model']
-        data = pd.DataFrame([[0 for i in range(0, len(columns))]], columns=columns).iloc[0]
+        data = pd.DataFrame([[0 for _ in range(0, len(columns))]], columns=columns).iloc[0]
     # with pd.option_context('display.max_rows', None, 'display.max_columns', None):
     #     print(data)
+    new_data = None
     response = await get_page(current_url)
     if response:
         soup = BeautifulSoup(response, "html.parser")
@@ -498,13 +507,15 @@ async def get_for_test_item(current_url, data=None, lvl=13):
         new_data['productionDate'] = productionDate.year
         new_data['ПТС'] = 2
         new_data['Таможня'] = 1
-    else:
-        new_data = await get_for_test_item(current_url, data, lvl)
+    elif count <= 10:
+        new_data = await get_for_test_item(current_url, data, lvl, count+1)
 
     return new_data
 
 
 def get_test_item():
+    global TRAIN_FILES
+    TRAIN_FILES = [f for f in os.listdir('train') if os.path.isfile(os.path.join('train', f))]
     loop = asyncio.get_event_loop()
     async def main():
         return await asyncio.wait([get_for_test_item('https://irkutsk.drom.ru/mercedes-benz/a-class/37626578.html')])
@@ -594,6 +605,6 @@ def main(all_=True, new=True, train=True):
 
 if __name__ == '__main__':
     print('------------------------------------------------')
-    main(train=False, new=False)
+    # main(train=False, new=False)
     # get_test()
-    # get_test_item()
+    get_test_item()
