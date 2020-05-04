@@ -359,6 +359,7 @@ async def get_item(x, all):
                 if new_data is not None:
                     data = data.append(new_data, ignore_index=True)
             except Exception as e:
+                data = None
                 print()
                 print(e)
 
