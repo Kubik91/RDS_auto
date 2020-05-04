@@ -356,8 +356,9 @@ async def get_item(x, all):
                 new_data = await get_for_test_item(item, x, lvl)
                 if data is None:
                     data = pd.DataFrame(columns=new_data.keys())
-                if new_data is not None:
-                    data = data.append(new_data, ignore_index=True)
+                if new_data is None:
+                    raise Exception('new_data is None')
+                data = data.append(new_data, ignore_index=True)
             except Exception as e:
                 data = None
                 print()
