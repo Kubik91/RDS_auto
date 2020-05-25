@@ -493,7 +493,10 @@ async def get_for_test_item(current_url, data=None, lvl=13, count=1):
                             elif FRAMETYPES.get(textNodes[1].strip().replace(',', '').split()[0]) in (1, 11):
                                 new_data['numberOfDoors'] = 2
                     elif textNodes[0] == 'Пробег, км:':
-                        new_data['mileage'] = round((int(textNodes[1].strip().split()[0].replace(',', '')) or 0) / 1.609344)
+                        try:
+                            new_data['mileage'] = round((int(textNodes[1].strip().split()[0].replace(',', '')) or 0) / 1.609344)
+                        except ValueError:
+                            new_data['mileage'] = 0
                         if new_data['mileage'] == 0 and lvl <= 7:
                             new_data['mileage'] = data['mileage']
                     elif textNodes[0] == 'Руль:' and lvl >= 2:
@@ -508,8 +511,9 @@ async def get_for_test_item(current_url, data=None, lvl=13, count=1):
                 time_long = description.find(
                         class_='b-media-cont b-media-cont_no-clear b-media-cont_bg_gray b-media-cont_modify_md b-random-group b-random-group_margin_b-size-xss b-text b-text_size_s'
                     )
-                if time_long:
-                    date = re.search(r'\d{2}.\d{2}.\d{4}', time_long.find('div').findAll('div', class_='b-media-cont_margin_t-size-xxs')[-1].text)
+                dates = time_long.find('div').findAll('div', class_='b-media-cont_margin_t-size-xxs')
+                if dates:
+                    date = re.search(r'\d{2}.\d{2}.\d{4}', dates[-1].text)
                     new_data['Владение'] = (productionDate - datetime.datetime.strptime(
                         date.group(),
                         '%d.%m.%Y'
