@@ -246,6 +246,7 @@ LEFT = -1
 
 
 async def get_page(url, lvl=0):
+    print(url)
     try:
         async with sem:
             async with aiohttp.ClientSession() as session:
@@ -353,18 +354,18 @@ async def get_item(x, all):
                                 all_items = await get_page_items(response)
 
             for item in all_items:
-                try:
+                # try:
                     new_data = await get_for_test_item(item, x, lvl)
                     if data is None:
                         data = pd.DataFrame(columns=new_data.keys())
                     if new_data is None:
                         raise Exception('new_data is None')
                     data = data.append(new_data, ignore_index=True)
-                except Exception as e:
-                    data = None
-                    print()
-                    print(e)
-                    break
+                # except Exception as e:
+                #     data = None
+                #     print()
+                #     print(e)
+                #     break
 
             if data is not None:
                 data_str = data.to_csv(encoding='utf-8', index=False)
