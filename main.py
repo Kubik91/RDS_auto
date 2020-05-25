@@ -320,62 +320,62 @@ async def get_page_items(response):
 
 
 async def get_item(x, all):
-    try:
-        if f'data_{x["id"]}.csv' not in TRAIN_FILES:
-            current_url = get_url(x)
-            response = await get_page(current_url)
-            all_items = []
-            lvl = 0
-            data = None
-            if response:
-                all_items = await get_page_items(response)
-                if len(all_items) < 15:
-                    while len(all_items) < 15 and lvl <= 12:
+    # try:
+    if f'data_{x["id"]}.csv' not in TRAIN_FILES:
+        current_url = get_url(x)
+        response = await get_page(current_url)
+        all_items = []
+        lvl = 0
+        data = None
+        if response:
+            all_items = await get_page_items(response)
+            if len(all_items) < 15:
+                while len(all_items) < 15 and lvl <= 12:
+                    lvl += 1
+                    current_url = get_url(x, lvl)
+                    response = await get_page(current_url)
+                    if response:
+                        all_items = await get_page_items(response)
+                    else:
+                        all_items = []
+                if len(all_items) > 50:
+                    lvl -= 1
+                    current_url = get_url(x, lvl)
+                    response = await get_page(current_url)
+                    if response:
+                        all_items = await get_page_items(response)
+                    else:
+                        all_items = []
+                    if len(all_items) < 10:
                         lvl += 1
                         current_url = get_url(x, lvl)
                         response = await get_page(current_url)
                         if response:
                             all_items = await get_page_items(response)
-                        else:
-                            all_items = []
-                    if len(all_items) > 50:
-                        lvl -= 1
-                        current_url = get_url(x, lvl)
-                        response = await get_page(current_url)
-                        if response:
-                            all_items = await get_page_items(response)
-                        else:
-                            all_items = []
-                        if len(all_items) < 10:
-                            lvl += 1
-                            current_url = get_url(x, lvl)
-                            response = await get_page(current_url)
-                            if response:
-                                all_items = await get_page_items(response)
 
-            for item in all_items:
-                # try:
-                    new_data = await get_for_test_item(item, x, lvl)
-                    if data is None:
-                        data = pd.DataFrame(columns=new_data.keys())
-                    if new_data is None:
-                        raise Exception('new_data is None')
-                    data = data.append(new_data, ignore_index=True)
-                # except Exception as e:
-                #     data = None
-                #     print()
-                #     print(e)
-                #     break
+        for item in all_items:
+            # try:
+                new_data = await get_for_test_item(item, x, lvl)
+                if data is None:
+                    data = pd.DataFrame(columns=new_data.keys())
+                if new_data is None:
+                    raise Exception('new_data is None')
+                data = data.append(new_data, ignore_index=True)
+            # except Exception as e:
+            #     data = None
+            #     print()
+            #     print(e)
+            #     break
 
-            if data is not None:
-                data_str = data.to_csv(encoding='utf-8', index=False)
-                async with AIOFile(f'train/data_{x["id"]}.csv', 'w') as afp:
-                    writer = Writer(afp)
-                    await writer(data_str)
-                    await afp.fsync()
-    except Exception as e:
-        print()
-        print('main error:', e)
+        if data is not None:
+            data_str = data.to_csv(encoding='utf-8', index=False)
+            async with AIOFile(f'train/data_{x["id"]}.csv', 'w') as afp:
+                writer = Writer(afp)
+                await writer(data_str)
+                await afp.fsync()
+    # except Exception as e:
+    #     print()
+    #     print('main error:', e)
 
     global COUNTS, LEFT
     COUNTS += 1
