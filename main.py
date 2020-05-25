@@ -364,10 +364,11 @@ async def get_item(x, all):
                 data = data.append(new_data, ignore_index=True)
             except Exception as e:
                 data = None
-                print()
-                print(f'{e=}')
-                print(traceback.print_tb(e.__traceback__))
-                return
+                # print()
+                # print(f'{e=}')
+                # print(traceback.print_tb(e.__traceback__))
+                # return
+                break
 
         if data is not None:
             data_str = data.to_csv(encoding='utf-8', index=False)
@@ -433,94 +434,100 @@ def get_test():
 
 
 async def get_for_test_item(current_url, data=None, lvl=13, count=1):
-    if data is None:
-        columns = ['id', 'brand', 'color', 'fuelType', 'modelDate', 'numberOfDoors',
-                   'productionDate', 'vehicleTransmission', 'enginePower', 'mileage',
-                   'Привод', 'Руль', 'Состояние', 'Владельцы', 'ПТС', 'Таможня',
-                   'Владение', 'motor', 'внедорожник', 'Безопасность', 'Салон',
-                   'Мультимедиа', 'Комфорт', 'Обзор', 'Защита от угона', 'седан',
-                   'хэтчбек', 'Элементы экстерьера', 'Прочее', 'лифтбек', 'купе', 'пикап',
-                   'минивэн', 'компактвэн', 'универсал', 'родстер', 'кабриолет', 'фургон',
-                   'микровэн', 'тарга', 'лимузин', 'model']
-        data = pd.DataFrame([[0 for _ in range(0, len(columns))]], columns=columns).iloc[0]
-    # with pd.option_context('display.max_rows', None, 'display.max_columns', None):
-    #     print(data)
-    new_data = None
-    response = await get_page(current_url)
-    if response:
-        soup = BeautifulSoup(response, "html.parser")
-        new_data = data.copy()
-        new_data['car_id'] = int(re.search(r'\d+(?=\.html)', current_url).group())
-        new_data['url'] = current_url
+    try:
+        if data is None:
+            columns = ['id', 'brand', 'color', 'fuelType', 'modelDate', 'numberOfDoors',
+                       'productionDate', 'vehicleTransmission', 'enginePower', 'mileage',
+                       'Привод', 'Руль', 'Состояние', 'Владельцы', 'ПТС', 'Таможня',
+                       'Владение', 'motor', 'внедорожник', 'Безопасность', 'Салон',
+                       'Мультимедиа', 'Комфорт', 'Обзор', 'Защита от угона', 'седан',
+                       'хэтчбек', 'Элементы экстерьера', 'Прочее', 'лифтбек', 'купе', 'пикап',
+                       'минивэн', 'компактвэн', 'универсал', 'родстер', 'кабриолет', 'фургон',
+                       'микровэн', 'тарга', 'лимузин', 'model']
+            data = pd.DataFrame([[0 for _ in range(0, len(columns))]], columns=columns).iloc[0]
+        # with pd.option_context('display.max_rows', None, 'display.max_columns', None):
+        #     print(data)
+        new_data = None
+        response = await get_page(current_url)
+        if response:
+            soup = BeautifulSoup(response, "html.parser")
+            new_data = data.copy()
+            new_data['car_id'] = int(re.search(r'\d+(?=\.html)', current_url).group())
+            new_data['url'] = current_url
 
-        for dv in soup.select_one('[data-bull-price]').findAll(text=True):
-            price = re.sub(r'\s', '', dv)
-            if price.isdigit():
-                new_data['price'] = int(price)
-                break
+            for dv in soup.select_one('[data-bull-price]').findAll(text=True):
+                price = re.sub(r'\s', '', dv)
+                if price.isdigit():
+                    new_data['price'] = int(price)
+                    break
 
-        for title in soup.select('h1', class_='b-title b-title_type_h1 b-title_no-margin b-text-inline'):
-            for brand in BRAND:
-                if brand.lower() in title.text.strip().lower():
-                    new_data['brand'] = BRAND.get(brand, 0)
-            new_data['modelDate'] = int(re.search(r"\d{4}(?=\s+год)", title.text.strip().lower()).group() or 0)
-        for description in soup.select('[data-section="auto-description"]'):
-            for attribute in description.findAll('div', class_='b-media-cont_margin_b-size-xxs'):
-                textNodes = attribute.findAll(text=True)
-                if textNodes[0] == 'Двигатель:' and lvl >= 2:
-                    new_data['fuelType'] = FUEL.get(textNodes[1].strip().replace(',', '').split()[0], 0)
-                elif textNodes[0] == 'Мощность:':
-                    new_data['enginePower'] = int(
-                        attribute.find(class_='b-triggers__text').text.replace('л.с.', '').replace(' ', ''))
-                elif textNodes[0] == 'Трансмиссия:' and lvl >= 5:
-                    new_data.at['vehicleTransmission'] = {'механика': 1, 'автомат': 2}.get(textNodes[1].strip().split()[0], 0)
-                elif textNodes[0] == 'Привод:' and lvl >= 6:
-                    new_data['Привод'] = WHEEL_DRIVE.get(textNodes[1].strip().split()[0], 0)
-                elif textNodes[0] == 'Тип кузова:' and lvl >= 11:
-                    for b_name in BODY_TYPES:
-                        new_data[b_name] = 0
-                    bodyType = BODY_TYPES.get(textNodes[1].strip().replace(',', '').split()[0], [])
-                    for bt in bodyType:
-                        new_data[bt] = 1
-                    if 'дв.' in textNodes[1]:
-                        new_data['numberOfDoors'] = int(textNodes[1].strip().replace('дв.', '').strip()[-1])
-                    else:
-                        if FRAMETYPES.get(textNodes[1].strip().replace(',', '').split()[0]) in (10, 12):
-                            new_data['numberOfDoors'] = 4
-                        elif FRAMETYPES.get(textNodes[1].strip().replace(',', '').split()[0]) in (3, 6, 9):
-                            new_data['numberOfDoors'] = 5
-                        elif FRAMETYPES.get(textNodes[1].strip().replace(',', '').split()[0]) in (1, 11):
-                            new_data['numberOfDoors'] = 2
-                elif textNodes[0] == 'Пробег, км:':
-                    new_data['mileage'] = round((int(textNodes[1].strip().split()[0].replace(',', '')) or 0) / 1.609344)
-                    if new_data['mileage'] == 0 and lvl <= 7:
-                        new_data['mileage'] = data['mileage']
-                elif textNodes[0] == 'Руль:' and lvl >= 2:
-                    new_data['Руль'] = RORL.get(textNodes[1].strip().split()[0].title(), 0)
-                elif textNodes[0] == 'Особые отметки:' and lvl >= 9:
-                    new_data['Состояние'] = 1 if textNodes[1].strip() == 'требуется ремонт или не на ходу' else 2
-        productionDate = datetime.datetime.strptime(re.search(r'\d{2}-\d{2}-\d{4}', soup.select('[data-viewbull-views-counter]')[0].text.strip()).group(), '%d-%m-%Y').date()
-        for description in soup.select('div[data-bull-id]'):
-            mans_count = description.find(class_='b-flex bm-forceFlex b-text b-text_size_default')
-            new_data['Владельцы'] = min(int(mans_count.findAll(class_='b-flex__item')[1].text), 3) if mans_count and mans_count.findAll(class_='b-flex__item')[0].text.strip() in ['Периоды регистрации', 'Записи о регистрации'] else 0
+            for title in soup.select('h1', class_='b-title b-title_type_h1 b-title_no-margin b-text-inline'):
+                for brand in BRAND:
+                    if brand.lower() in title.text.strip().lower():
+                        new_data['brand'] = BRAND.get(brand, 0)
+                new_data['modelDate'] = int(re.search(r"\d{4}(?=\s+год)", title.text.strip().lower()).group() or 0)
+            for description in soup.select('[data-section="auto-description"]'):
+                for attribute in description.findAll('div', class_='b-media-cont_margin_b-size-xxs'):
+                    textNodes = attribute.findAll(text=True)
+                    if textNodes[0] == 'Двигатель:' and lvl >= 2:
+                        new_data['fuelType'] = FUEL.get(textNodes[1].strip().replace(',', '').split()[0], 0)
+                    elif textNodes[0] == 'Мощность:':
+                        new_data['enginePower'] = int(
+                            attribute.find(class_='b-triggers__text').text.replace('л.с.', '').replace(' ', ''))
+                    elif textNodes[0] == 'Трансмиссия:' and lvl >= 5:
+                        new_data.at['vehicleTransmission'] = {'механика': 1, 'автомат': 2}.get(textNodes[1].strip().split()[0], 0)
+                    elif textNodes[0] == 'Привод:' and lvl >= 6:
+                        new_data['Привод'] = WHEEL_DRIVE.get(textNodes[1].strip().split()[0], 0)
+                    elif textNodes[0] == 'Тип кузова:' and lvl >= 11:
+                        for b_name in BODY_TYPES:
+                            new_data[b_name] = 0
+                        bodyType = BODY_TYPES.get(textNodes[1].strip().replace(',', '').split()[0], [])
+                        for bt in bodyType:
+                            new_data[bt] = 1
+                        if 'дв.' in textNodes[1]:
+                            new_data['numberOfDoors'] = int(textNodes[1].strip().replace('дв.', '').strip()[-1])
+                        else:
+                            if FRAMETYPES.get(textNodes[1].strip().replace(',', '').split()[0]) in (10, 12):
+                                new_data['numberOfDoors'] = 4
+                            elif FRAMETYPES.get(textNodes[1].strip().replace(',', '').split()[0]) in (3, 6, 9):
+                                new_data['numberOfDoors'] = 5
+                            elif FRAMETYPES.get(textNodes[1].strip().replace(',', '').split()[0]) in (1, 11):
+                                new_data['numberOfDoors'] = 2
+                    elif textNodes[0] == 'Пробег, км:':
+                        new_data['mileage'] = round((int(textNodes[1].strip().split()[0].replace(',', '')) or 0) / 1.609344)
+                        if new_data['mileage'] == 0 and lvl <= 7:
+                            new_data['mileage'] = data['mileage']
+                    elif textNodes[0] == 'Руль:' and lvl >= 2:
+                        new_data['Руль'] = RORL.get(textNodes[1].strip().split()[0].title(), 0)
+                    elif textNodes[0] == 'Особые отметки:' and lvl >= 9:
+                        new_data['Состояние'] = 1 if textNodes[1].strip() == 'требуется ремонт или не на ходу' else 2
+            productionDate = datetime.datetime.strptime(re.search(r'\d{2}-\d{2}-\d{4}', soup.select('[data-viewbull-views-counter]')[0].text.strip()).group(), '%d-%m-%Y').date()
+            for description in soup.select('div[data-bull-id]'):
+                mans_count = description.find(class_='b-flex bm-forceFlex b-text b-text_size_default')
+                new_data['Владельцы'] = min(int(mans_count.findAll(class_='b-flex__item')[1].text), 3) if mans_count and mans_count.findAll(class_='b-flex__item')[0].text.strip() in ['Периоды регистрации', 'Записи о регистрации'] else 0
 
-            time_long = description.find(
-                    class_='b-media-cont b-media-cont_no-clear b-media-cont_bg_gray b-media-cont_modify_md b-random-group b-random-group_margin_b-size-xss b-text b-text_size_s'
-                )
-            if time_long:
-                date = re.search(r'\d{2}.\d{2}.\d{4}', time_long.find('div').findAll('div', class_='b-media-cont_margin_t-size-xxs')[-1].text)
-                new_data['Владение'] = (productionDate - datetime.datetime.strptime(
-                    date.group(),
-                    '%d.%m.%Y'
-                ).date()).days * 24 * 3600 if date else 0
+                time_long = description.find(
+                        class_='b-media-cont b-media-cont_no-clear b-media-cont_bg_gray b-media-cont_modify_md b-random-group b-random-group_margin_b-size-xss b-text b-text_size_s'
+                    )
+                if time_long:
+                    date = re.search(r'\d{2}.\d{2}.\d{4}', time_long.find('div').findAll('div', class_='b-media-cont_margin_t-size-xxs')[-1].text)
+                    new_data['Владение'] = (productionDate - datetime.datetime.strptime(
+                        date.group(),
+                        '%d.%m.%Y'
+                    ).date()).days * 24 * 3600 if date else 0
 
-        new_data['productionDate'] = productionDate.year
-        new_data['ПТС'] = 2
-        new_data['Таможня'] = 1
-    elif count <= 10:
-        new_data = await get_for_test_item(current_url, data, lvl, count+1)
+            new_data['productionDate'] = productionDate.year
+            new_data['ПТС'] = 2
+            new_data['Таможня'] = 1
+        elif count <= 10:
+            new_data = await get_for_test_item(current_url, data, lvl, count+1)
 
-    return new_data
+        return new_data
+
+    except Exception as error:
+        print(f'{error=}')
+        print(f'{current_url=}')
+        print(traceback.print_tb(error.__traceback__))
 
 
 def get_test_item():
