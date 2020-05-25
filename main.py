@@ -247,7 +247,6 @@ LEFT = -1
 
 
 async def get_page(url, lvl=0):
-    print(url)
     try:
         async with sem:
             async with aiohttp.ClientSession() as session:
