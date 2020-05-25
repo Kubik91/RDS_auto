@@ -511,13 +511,14 @@ async def get_for_test_item(current_url, data=None, lvl=13, count=1):
                 time_long = description.find(
                         class_='b-media-cont b-media-cont_no-clear b-media-cont_bg_gray b-media-cont_modify_md b-random-group b-random-group_margin_b-size-xss b-text b-text_size_s'
                     )
-                dates = time_long.find('div').findAll('div', class_='b-media-cont_margin_t-size-xxs')
-                if dates:
-                    date = re.search(r'\d{2}.\d{2}.\d{4}', dates[-1].text)
-                    new_data['Владение'] = (productionDate - datetime.datetime.strptime(
-                        date.group(),
-                        '%d.%m.%Y'
-                    ).date()).days * 24 * 3600 if date else 0
+                if time_long:
+                    dates = time_long.find('div').findAll('div', class_='b-media-cont_margin_t-size-xxs')
+                    if dates:
+                        date = re.search(r'\d{2}.\d{2}.\d{4}', dates[-1].text)
+                        new_data['Владение'] = (productionDate - datetime.datetime.strptime(
+                            date.group(),
+                            '%d.%m.%Y'
+                        ).date()).days * 24 * 3600 if date else 0
 
             new_data['productionDate'] = productionDate.year
             new_data['ПТС'] = 2
