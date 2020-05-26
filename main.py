@@ -363,9 +363,9 @@ async def get_item(x, all):
                 data = data.append(new_data, ignore_index=True)
             except Exception as e:
                 data = None
-                # print()
-                # print(f'{e=}')
-                # print(traceback.print_tb(e.__traceback__))
+                print()
+                print(f'{e=}')
+                print(traceback.print_tb(e.__traceback__))
                 # return
                 break
 
@@ -375,9 +375,6 @@ async def get_item(x, all):
                 writer = Writer(afp)
                 await writer(data_str)
                 await afp.fsync()
-    # except Exception as e:
-    #     print()
-    #     print('main error:', e)
 
     global COUNTS, LEFT
     COUNTS += 1
@@ -390,8 +387,6 @@ async def get_item(x, all):
 
 async def get_for_test(x, all):
     global COUNTS, LEFT
-    async with sem:
-        await asyncio.sleep(3)
     COUNTS += 1
     complete = int((COUNTS*100)/all)
     if not COUNTS == complete:
@@ -412,6 +407,7 @@ async def get_for_items(X):
     TRAIN_FILES = [f for f in os.listdir('train') if os.path.isfile(os.path.join('train', f))]
     print('--start--')
     responses = await asyncio.gather(*[get_item(x, len(X)) for i, x in X.iterrows()])
+    print('')
     print('--finish--')
     return responses
 
@@ -421,6 +417,7 @@ def get_train_data(X):
     async def main(X):
         return await asyncio.wait([get_for_items(X)])
     train_X = loop.run_until_complete(main(X))
+    print(train_X)
     loop.close()
 
 
