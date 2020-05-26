@@ -406,18 +406,16 @@ async def get_for_items(X):
     global TRAIN_FILES
     TRAIN_FILES = [f for f in os.listdir('train') if os.path.isfile(os.path.join('train', f))]
     print('--start--')
-    responses = await asyncio.gather(*[get_item(x, len(X)) for i, x in X.iterrows()])
+    await asyncio.gather(*[get_item(x, len(X)) for i, x in X.iterrows()])
     print('')
     print('--finish--')
-    return responses
 
 
 def get_train_data(X):
     loop = asyncio.get_event_loop()
     async def main(X):
         return await asyncio.wait([get_for_items(X)])
-    train_X = loop.run_until_complete(main(X))
-    print(train_X)
+    loop.run_until_complete(main(X))
     loop.close()
 
 
@@ -556,7 +554,7 @@ def main(all_=True, new=True, train=True):
     get_train_data(X)
 
     for file in TRAIN_FILES:
-        train_data = pd.read_csv(os.path.join(file))
+        train_data = pd.read_csv(os.path.join('train', file))
         if len(train_data) > 40:
             print('>40', file)
         elif len(train_data) < 10:
