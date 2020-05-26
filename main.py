@@ -553,7 +553,14 @@ def main(all_=True, new=True, train=True):
 
     X = train_preproc
 
-    train_X = get_train_data(X)
+    get_train_data(X)
+
+    for file in TRAIN_FILES:
+        train_data = pd.read_csv(os.path.join(file))
+        if len(train_data) > 40:
+            print('>40', file)
+        elif len(train_data) < 10:
+            print('<10', file)
 
     X.drop(['model'], axis=1, inplace=True)
 
