@@ -555,8 +555,13 @@ def main(all_=True, new=True, train=True):
 
     for file in TRAIN_FILES:
         train_data = pd.read_csv(os.path.join('train', file))
-        # if len(train_data) > 40:
-        #     print('>40', file)
+        if len(train_data) > 40:
+            train_data = train_data[train_data['Владельцы'] > 0]
+            if len(train_data) > 40:
+                print('>40', file)
+                return
+            elif len(train_data) < 10:
+                print('<10 >40', file)
         if len(train_data) < 10:
             print('<10', file)
 
