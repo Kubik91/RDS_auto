@@ -560,13 +560,8 @@ def main(all_=True, new=True, train=True):
         if len(train_data) > 40:
             train_data = train_data[train_data['Владельцы'] > 0]
             if len(train_data) > 40:
-                print('>40', file.ljust(15, ' '), len(train_data))
                 max_count = max(max_count, len(train_data))
                 file_counts.update({file: len(train_data)})
-            elif len(train_data) < 10:
-                print('<10 >40', file.ljust(15, ' '), len(train_data))
-        if len(train_data) < 10:
-            print('<10', file.ljust(15, ' '), len(train_data))
     print(list(file_counts.keys())[list(file_counts.values()).index(max_count)])
 
     X.drop(['model'], axis=1, inplace=True)
