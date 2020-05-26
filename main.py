@@ -203,8 +203,8 @@ def preproc_data(df_input):
     df_output.drop(['vehicleConfiguration', 'description', 'bodyType', 'name', 'Комплектация', 'engineDisplacement'],
                    axis=1, inplace=True)
 
-    with pd.option_context('display.max_rows', None, 'display.max_columns', None):
-        print(df_output.columns)
+    # with pd.option_context('display.max_rows', None, 'display.max_columns', None):
+    #     print(df_output.columns)
 
     return df_output
 
@@ -558,12 +558,13 @@ def main(all_=True, new=True, train=True):
         if len(train_data) > 40:
             train_data = train_data[train_data['Владельцы'] > 0]
             if len(train_data) > 40:
-                print('>40', file)
+                print('>40', file.ljust(15, ' '), len(train_data))
                 return
             elif len(train_data) < 10:
-                print('<10 >40', file)
+                print('<10 >40', file.ljust(15, ' '), len(train_data))
+                return
         if len(train_data) < 10:
-            print('<10', file)
+            print('<10', file.ljust(15, ' '), len(train_data))
 
     X.drop(['model'], axis=1, inplace=True)
 
