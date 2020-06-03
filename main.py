@@ -6,6 +6,7 @@ import re
 import sys
 import traceback
 import urllib
+from math import fabs
 
 import aiohttp
 import pandas as pd
@@ -551,27 +552,64 @@ def main(all_=True, new=True, train=True):
 
     X = train_preproc
 
-    get_train_data(X)
+    # get_train_data(X)
+
     file_counts = {}
     max_count = 0
 
-    for file in TRAIN_FILES:
+    for file in [f for f in os.listdir('train') if os.path.isfile(os.path.join('train', f))]:
+    # for file in ['data_15458.csv']:
         train_data = pd.read_csv(os.path.join('train', file))
         if len(train_data) > 40:
+            prev_train_data = train_data.copy()
             train_data = train_data[train_data['Владельцы'] > 0]
-            if len(train_data) > 40:
-                max_count = max(max_count, len(train_data))
-                file_counts.update({file: len(train_data)})
+            if len(train_data) < 10:
+                train_data = prev_train_data.copy()
+        if len(train_data) > 40:
+            prev_train_data = train_data.copy()
+            train_data = train_data[train_data['Владение'] > 0]
+            if len(train_data) < 10:
+                train_data = prev_train_data.copy()
+        if len(train_data) > 40:
+            prev_train_data = train_data.copy()
+            train_data = train_data[train_data['mileage'] > 0]
+            if len(train_data) < 10:
+                train_data = prev_train_data.copy()
+        if len(train_data) > 40:
+            prev_train_data = train_data.copy()
+            train_data = train_data[train_data['motor'] > 0]
+            if len(train_data) < 10:
+                train_data = prev_train_data.copy()
+        x = X[X['id'] == int(file.replace('data_', '').replace('.csv', ''))].iloc[0]
+        while len(train_data) > 40:
+            for col in ['Владельцы', 'modelDate', 'productionDate', 'enginePower', 'mileage']:
+                prev_train_data = train_data.copy()
+                max_val = max(train_data[col].max() - x[col], x[col] - train_data[col].min())
+                if max_val:
+                    train_data = train_data[(train_data[col] >= x[col] - max_val + 1) & (train_data[col] <= x[col] + max_val - 1)]
+                if len(train_data) < 10:
+                    train_data = prev_train_data.copy()
+                elif len(train_data) < 40:
+                    break
+        max_count = max(max_count, len(train_data))
+        file_counts.update({file: len(train_data)})
+        if len(train_data) < 10:
+            print(file, len(train_data))
+        # with pd.option_context('display.max_rows', None, 'display.max_columns', None):
+        #     # print(X[X['id'] == 15458].head())
+        #     print('-----------------------------------------------------------')
+        #     print(train_data.head())
+
     print(list(file_counts.keys())[list(file_counts.values()).index(max_count)])
 
-    X.drop(['model'], axis=1, inplace=True)
+    # X.drop(['model'], axis=1, inplace=True)
 
-    y = sample_submission.price.values
+    # y = sample_submission.price.values
 
     # get_train_data(X)
 
-    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=VAL_SIZE, shuffle=True,
-                                                        random_state=RANDOM_SEED)
+    # X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=VAL_SIZE, shuffle=True,
+    #                                                     random_state=RANDOM_SEED)
 
     # X_train = pd.get_dummies(X_train, columns=['Привод', 'Руль', 'Владельцы', 'ПТС', 'vehicleTransmission', 'fuelType', 'color', 'brand'])
 
