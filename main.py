@@ -7,6 +7,7 @@ import sys
 import traceback
 import urllib
 from math import fabs
+from pathlib import Path
 
 import aiohttp
 import pandas as pd
@@ -557,6 +558,7 @@ def main(all_=True, new=True, train=True):
     file_counts = {}
     max_count = 0
 
+    Path("data").mkdir(parents=True, exist_ok=True)
     for file in [f for f in os.listdir('train') if os.path.isfile(os.path.join('train', f))]:
     # for file in ['data_15458.csv']:
         train_data = pd.read_csv(os.path.join('train', file))
@@ -597,6 +599,7 @@ def main(all_=True, new=True, train=True):
         file_counts.update({file: len(train_data)})
         if len(train_data) < 10:
             print(file, len(train_data))
+        train_data.to_csv(os.path.join('data', file))
         # with pd.option_context('display.max_rows', None, 'display.max_columns', None):
         #     # print(X[X['id'] == 15458].head())
         #     print('-----------------------------------------------------------')
