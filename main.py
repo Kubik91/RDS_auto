@@ -582,11 +582,13 @@ def main(all_=True, new=True, train=True):
                 train_data = prev_train_data.copy()
         x = X[X['id'] == int(file.replace('data_', '').replace('.csv', ''))].iloc[0]
         while len(train_data) > 40:
-            for col in ['Владельцы', 'modelDate', 'productionDate', 'enginePower', 'mileage']:
+            for col, delta in {'Владельцы': 1, 'modelDate': 1, 'productionDate': 1, 'enginePower': 1, 'motor': .1,
+                               'mileage': 1, 'Владение': 100}.items():
                 prev_train_data = train_data.copy()
                 max_val = max(train_data[col].max() - x[col], x[col] - train_data[col].min())
                 if max_val:
-                    train_data = train_data[(train_data[col] >= x[col] - max_val + 1) & (train_data[col] <= x[col] + max_val - 1)]
+                    train_data = train_data[(train_data[col] >= x[col] - max_val + delta) &
+                                            (train_data[col] <= x[col] + max_val - delta)]
                 if len(train_data) < 10:
                     train_data = prev_train_data.copy()
                 elif len(train_data) < 40:
