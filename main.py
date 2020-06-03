@@ -559,8 +559,16 @@ def main(all_=True, new=True, train=True):
     max_count = 0
 
     Path("data").mkdir(parents=True, exist_ok=True)
-    for file in [f for f in os.listdir('train') if os.path.isfile(os.path.join('train', f))]:
+    files = [f for f in os.listdir('train') if os.path.isfile(os.path.join('train', f))]
+    files_count = len(files)
+    left = 0
+    for num, file in enumerate(files, 1):
     # for file in ['data_15458.csv']:
+        complete = round((num*100)/files_count)
+        if not left == complete:
+            left = complete
+        sys.stdout.write(f'Ход выполнения: {left}%({num} из {files_count})\r')
+        sys.stdout.flush()
         train_data = pd.read_csv(os.path.join('train', file))
         if len(train_data) > 40:
             prev_train_data = train_data.copy()
