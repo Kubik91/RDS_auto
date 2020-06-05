@@ -543,35 +543,30 @@ def get_test_item():
 
 def main(all_=True, new=True, train=True):
     df_train = pd.read_csv(DIR_TRAIN + 'test.csv')  # мой подготовленный датасет для обучения модели
-    # df_test = pd.read_csv(DIR_TEST + 'test.csv')
-    sample_submission = pd.read_csv(DIR_TEST + 'sample_submission.csv')
 
     train_preproc = preproc_data(df_train)
-    # X_sub = preproc_data(sample_submission)
-
-    # train_preproc.drop(['Привод', 'Руль', 'Владельцы', 'ПТС', 'enginePower'], axis=1, inplace=True, )  # убрал лишний столбец, которого нет в testе
 
     X = train_preproc
 
     # get_train_data(X)
 
-    file_counts = {}
-    max_count = 0
-
+    print('Подготовка данных')
     Path("data").mkdir(parents=True, exist_ok=True)
     files = [f for f in os.listdir('train') if os.path.isfile(os.path.join('train', f))]
+    # files = []
     files_count = len(files)
     left = 0
     errors = 0
     for num, file in enumerate(files, 1):
-    # for file in ['data_15458.csv']:
         try:
-            complete = round((num*100)/files_count)
+            complete = int((num*100)/files_count)
             if not left == complete:
                 left = complete
             sys.stdout.write(f'Ход выполнения: {left}%({num} из {files_count}){f" ошибок: {errors}" if errors else ""}\r')
             sys.stdout.flush()
             train_data = pd.read_csv(os.path.join('train', file))
+            train_data.dropna(subset=['price'], inplace=True)
+            train_data = train_data[train_data['Владение'] >= 0]
             if len(train_data) > 40:
                 prev_train_data = train_data.copy()
                 train_data = train_data[train_data['Владельцы'] > 0]
@@ -593,11 +588,13 @@ def main(all_=True, new=True, train=True):
                 if len(train_data) < 10:
                     train_data = prev_train_data.copy()
             x = X[X['id'] == int(file.replace('data_', '').replace('.csv', ''))].iloc[0]
-            while len(train_data) > 40:
+            i = 0
+            while len(train_data) > 40 and i < 3000:
+                i += 1
                 for col, delta in {'Владельцы': 1, 'modelDate': 1, 'productionDate': 1, 'enginePower': 1, 'motor': .1,
                                    'mileage': 1, 'Владение': 100}.items():
                     prev_train_data = train_data.copy()
-                    max_val = max(train_data[col].max() - x[col], x[col] - train_data[col].min())
+                    max_val = max(train_data[col].max() - x[col], x[col] - train_data[col].min(), 0)
                     if max_val:
                         train_data = train_data[(train_data[col] >= x[col] - max_val + delta) &
                                                 (train_data[col] <= x[col] + max_val - delta)]
@@ -605,21 +602,63 @@ def main(all_=True, new=True, train=True):
                         train_data = prev_train_data.copy()
                     elif len(train_data) < 40:
                         break
-            max_count = max(max_count, len(train_data))
-            file_counts.update({file: len(train_data)})
-            if len(train_data) < 10:
-                print(file, len(train_data))
             train_data.to_csv(os.path.join('data', file))
-            # with pd.option_context('display.max_rows', None, 'display.max_columns', None):
-            #     # print(X[X['id'] == 15458].head())
-            #     print('-----------------------------------------------------------')
-            #     print(train_data.head())
         except Exception as ee:
             errors += 1
+            print()
             print(f'error {ee=}')
             print(traceback.print_tb(ee.__traceback__))
+    else:
+        print()
 
-    print(list(file_counts.keys())[list(file_counts.values()).index(max_count)])
+    def cat_model(y_train, X_train):
+        model = CatBoostRegressor(iterations=ITERATIONS,
+                                  learning_rate=LR,
+                                  eval_metric='MAPE',
+                                  random_seed=RANDOM_SEED, )
+        # with pd.option_context('display.max_rows', None, 'display.max_columns', None):
+        #     print(X_train)
+        #     print(y_train)
+        model.fit(X_train, y_train,
+                  verbose=False,
+                  plot=False)
+
+        return model
+
+    print('Обработка данных')
+    files = [f for f in os.listdir('data') if os.path.isfile(os.path.join('data', f))]
+    # files = ['data_1000.csv']
+    files_count = len(files)
+    left = 0
+    avg_data = pd.DataFrame(columns=['id', 'price'])
+    cat_data = pd.DataFrame(columns=['id', 'price'])
+    all_train = pd.DataFrame()
+    for num, file in enumerate(files, 1):
+        complete = int((num*100)/files_count)
+        if not left == complete:
+            left = complete
+        sys.stdout.write(f'Ход выполнения: {left}%({num} из {files_count})\r')
+        sys.stdout.flush()
+        train_data = pd.read_csv(os.path.join('train', file))
+        train_data = train_data[train_data['Владение'] >= 0]
+        train_data.dropna(subset=['price'], inplace=True)
+        avg_data = avg_data.append(pd.Series({'id': int(file.replace('data_', '').replace('.csv', '')),
+                                              'price': train_data['price'].mean()}),
+                                   ignore_index=True)
+
+        # print(file, '---------------------------------------------------------------------------------------------')
+        model = cat_model(train_data.price.values, train_data.drop(['model', 'price', 'car_id', 'url'], axis=1))
+        cat_data = cat_data.append(pd.Series({'id': int(file.replace('data_', '').replace('.csv', '')),
+                                              'price': model.predict(X[X['id'] == int(file.replace('data_', '').replace('.csv', ''))].drop('model', axis=1))}),
+                                   ignore_index=True)
+
+        all_train = all_train.append(train_data, ignore_index=True)
+    else:
+        print()
+
+    avg_data.to_csv(os.path.join('files', 'avg_data.csv'))
+    cat_data.to_csv(os.path.join('files', 'cat_data.csv'))
+    all_train.to_csv(os.path.join('files', 'all_train.csv'))
 
     # X.drop(['model'], axis=1, inplace=True)
 
@@ -631,7 +670,6 @@ def main(all_=True, new=True, train=True):
     #                                                     random_state=RANDOM_SEED)
 
     # X_train = pd.get_dummies(X_train, columns=['Привод', 'Руль', 'Владельцы', 'ПТС', 'vehicleTransmission', 'fuelType', 'color', 'brand'])
-
 
     # model.save_model('catboost_single_model_baseline.model')
     # test_predict = model.predict(X_test)
@@ -650,23 +688,9 @@ def main(all_=True, new=True, train=True):
     # score_ls = []
     # splits = list(KFold(n_splits=N_FOLDS, shuffle=True, random_state=RANDOM_SEED).split(X, y))
 
-    # def cat_model(y_train, X_train, X_test, y_test):
-    #     model = CatBoostRegressor(iterations=ITERATIONS,
-    #                               learning_rate=LR,
-    #                               eval_metric='MAPE',
-    #                               random_seed=RANDOM_SEED, )
-    #     model.fit(X_train, y_train,
-    #               cat_features=cat_features_ids,
-    #               eval_set=(X_test, y_test),
-    #               verbose=False,
-    #               use_best_model=True,
-    #               plot=False)
-    #
-    #     return (model)
-    #
-    # def mape(y_true, y_pred):
-    #     return np.mean(np.abs((y_pred - y_true) / y_true))
-    #
+    def mape(y_true, y_pred):
+        return np.mean(np.abs((y_pred - y_true) / y_true))
+
     # for idx, (train_idx, test_idx) in tqdm(enumerate(splits), total=N_FOLDS, ):
     #     # use the indexes to extract the folds in the train and validation data
     #     X_train, y_train, X_test, y_test = X.iloc[train_idx], y[train_idx], X.iloc[test_idx], y[test_idx]
