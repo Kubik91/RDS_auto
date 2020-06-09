@@ -634,25 +634,37 @@ def main(all_=True, new=True, train=True):
     cat_data = pd.DataFrame(columns=['id', 'price'])
     all_train = pd.DataFrame()
     for num, file in enumerate(files, 1):
-        complete = int((num*100)/files_count)
-        if not left == complete:
-            left = complete
-        sys.stdout.write(f'Ход выполнения: {left}%({num} из {files_count})\r')
-        sys.stdout.flush()
-        train_data = pd.read_csv(os.path.join('train', file))
-        train_data = train_data[train_data['Владение'] >= 0]
-        train_data.dropna(subset=['price'], inplace=True)
-        avg_data = avg_data.append(pd.Series({'id': int(file.replace('data_', '').replace('.csv', '')),
-                                              'price': train_data['price'].mean()}),
-                                   ignore_index=True)
+        try:
+            complete = int((num*100)/files_count)
+            if not left == complete:
+                left = complete
+            sys.stdout.write(f'Ход выполнения: {left}%({num} из {files_count})\r')
+            sys.stdout.flush()
+            train_data = pd.read_csv(os.path.join('train', file))
+            train_data = train_data[train_data['Владение'] >= 0]
+            train_data.dropna(subset=['price'], inplace=True)
+            avg_data = avg_data.append(pd.Series({'id': int(file.replace('data_', '').replace('.csv', '')),
+                                                  'price': train_data['price'].mean()}),
+                                       ignore_index=True)
 
-        # print(file, '---------------------------------------------------------------------------------------------')
-        model = cat_model(train_data.price.values, train_data.drop(['model', 'price', 'car_id', 'url'], axis=1))
-        cat_data = cat_data.append(pd.Series({'id': int(file.replace('data_', '').replace('.csv', '')),
-                                              'price': model.predict(X[X['id'] == int(file.replace('data_', '').replace('.csv', ''))].drop('model', axis=1))}),
-                                   ignore_index=True)
+            # print(file, '---------------------------------------------------------------------------------------------')
+            current_train_data = train_data.drop(['model', 'price', 'car_id', 'url'], axis=1).drop_duplicates()
+            if len(current_train_data) > 1:
+                model = cat_model(current_train_data.price.values, current_train_data)
+                cat_data = cat_data.append(pd.Series({'id': int(file.replace('data_', '').replace('.csv', '')),
+                                                      'price': model.predict(X[X['id'] == int(file.replace('data_', '').replace('.csv', ''))].drop('model', axis=1))}),
+                                           ignore_index=True)
+            else:
+                cat_data = cat_data.append(pd.Series({'id': int(file.replace('data_', '').replace('.csv', '')),
+                                                      'price': current_train_data.iloc[0].price}),
+                                           ignore_index=True)
 
-        all_train = all_train.append(train_data, ignore_index=True)
+
+            all_train = all_train.append(train_data, ignore_index=True)
+        except Exception as e:
+            print()
+            print(f'{e=}')
+            print(traceback.print_tb(e.__traceback__))
     else:
         print()
 
