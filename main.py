@@ -663,6 +663,7 @@ def main(all_=True, new=True, train=True):
             all_train = all_train.append(train_data, ignore_index=True)
         except Exception as e:
             print()
+            print(f'{file=}')
             print(f'{e=}')
             print(traceback.print_tb(e.__traceback__))
     else:
