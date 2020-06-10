@@ -648,9 +648,9 @@ def main(all_=True, new=True, train=True):
                                        ignore_index=True)
 
             # print(file, '---------------------------------------------------------------------------------------------')
-            current_train_data = train_data.drop(['model', 'price', 'car_id', 'url'], axis=1).drop_duplicates()
+            current_train_data = train_data.drop(['model', 'car_id', 'url'], axis=1).drop_duplicates()
             if len(current_train_data) > 1:
-                model = cat_model(current_train_data.price.values, current_train_data)
+                model = cat_model(current_train_data.price.values, current_train_datatrain_data.drop(['price'], axis=1))
                 cat_data = cat_data.append(pd.Series({'id': int(file.replace('data_', '').replace('.csv', '')),
                                                       'price': model.predict(X[X['id'] == int(file.replace('data_', '').replace('.csv', ''))].drop('model', axis=1))}),
                                            ignore_index=True)
