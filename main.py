@@ -669,9 +669,9 @@ def main(all_=True, new=True, train=True):
     else:
         print()
 
-    # avg_data.to_csv(os.path.join('files', 'avg_data.csv'))
-    # cat_data.to_csv(os.path.join('files', 'cat_data.csv'))
-    # all_train.to_csv(os.path.join('files', 'all_train.csv'))
+    avg_data.to_csv(os.path.join('files', 'avg_data.csv'))
+    cat_data.to_csv(os.path.join('files', 'cat_data.csv'))
+    all_train.to_csv(os.path.join('files', 'all_train.csv'))
 
     # X.drop(['model'], axis=1, inplace=True)
 
