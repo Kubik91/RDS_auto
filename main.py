@@ -553,7 +553,7 @@ def main(all_=True, new=True, train=True):
     print('Подготовка данных')
     Path("data").mkdir(parents=True, exist_ok=True)
     files = [f for f in os.listdir('train') if os.path.isfile(os.path.join('train', f))]
-    # files = []
+    files = []
     files_count = len(files)
     left = 0
     errors = 0
@@ -627,7 +627,7 @@ def main(all_=True, new=True, train=True):
 
     print('Обработка данных')
     files = [f for f in os.listdir('data') if os.path.isfile(os.path.join('data', f))]
-    # files = ['data_1000.csv']
+    files = ['data_3656.csv']
     files_count = len(files)
     left = 0
     avg_data = pd.DataFrame(columns=['id', 'price'])
@@ -649,16 +649,16 @@ def main(all_=True, new=True, train=True):
 
             # print(file, '---------------------------------------------------------------------------------------------')
             current_train_data = train_data.drop(['model', 'car_id', 'url'], axis=1).drop_duplicates()
-            if len(current_train_data) > 1:
+
+            if len(current_train_data) == 1 or len(current_train_data[['price']].drop_duplicates()) == 1:
+                cat_data = cat_data.append(pd.Series({'id': int(file.replace('data_', '').replace('.csv', '')),
+                                                      'price': current_train_data.iloc[0].price}),
+                                           ignore_index=True)
+            else:
                 model = cat_model(current_train_data.price.values, current_train_data.drop(['price'], axis=1))
                 cat_data = cat_data.append(pd.Series({'id': int(file.replace('data_', '').replace('.csv', '')),
                                                       'price': model.predict(X[X['id'] == int(file.replace('data_', '').replace('.csv', ''))].drop('model', axis=1))}),
                                            ignore_index=True)
-            else:
-                cat_data = cat_data.append(pd.Series({'id': int(file.replace('data_', '').replace('.csv', '')),
-                                                      'price': current_train_data.iloc[0].price}),
-                                           ignore_index=True)
-
 
             all_train = all_train.append(train_data, ignore_index=True)
         except Exception as e:
@@ -669,9 +669,9 @@ def main(all_=True, new=True, train=True):
     else:
         print()
 
-    avg_data.to_csv(os.path.join('files', 'avg_data.csv'))
-    cat_data.to_csv(os.path.join('files', 'cat_data.csv'))
-    all_train.to_csv(os.path.join('files', 'all_train.csv'))
+    # avg_data.to_csv(os.path.join('files', 'avg_data.csv'))
+    # cat_data.to_csv(os.path.join('files', 'cat_data.csv'))
+    # all_train.to_csv(os.path.join('files', 'all_train.csv'))
 
     # X.drop(['model'], axis=1, inplace=True)
 
