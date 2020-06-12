@@ -627,7 +627,7 @@ def main(all_=True, new=True, train=True):
 
     print('Обработка данных')
     files = [f for f in os.listdir('data') if os.path.isfile(os.path.join('data', f))]
-    files = ['data_3656.csv']
+    # files = ['data_3656.csv']
     files_count = len(files)
     left = 0
     avg_data = pd.DataFrame(columns=['id', 'price'])
