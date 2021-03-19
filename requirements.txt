@@ -33,7 +33,7 @@ django-filter==2.2.0
 django-rest-framework==0.1.0
 django-sekizai==1.0.0
 django-select2==7.2.0
-djangorestframework==3.11.0
+djangorestframework==3.11.2
 djangorestframework-xml==1.4.0
 drf-yasg==1.17.0
 entrypoints==0.3
