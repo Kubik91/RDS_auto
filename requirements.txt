@@ -22,7 +22,7 @@ cycler==0.10.0
 Cython==0.29.16
 decorator==4.4.2
 defusedxml==0.6.0
-Django==2.2.12
+Django==2.2.20
 django-appconf==1.0.4
 django-autocomplete-light==3.4.1
 django-bootstrap4==1.1.1
