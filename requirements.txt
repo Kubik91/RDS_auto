@@ -4,7 +4,7 @@ anyconfig==0.9.7
 appdirs==1.4.3
 async-property==0.2.1
 async-timeout==3.0.1
-asyncpg==0.20.0
+asyncpg==0.21.0
 attrs==19.3.0
 backcall==0.1.0
 beautifulsoup4==4.8.2
