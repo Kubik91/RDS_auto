@@ -12,7 +12,7 @@ billiard==3.6.3.0
 bleach==3.1.4
 cached-property==1.5.1
 catboost==0.22
-celery==4.4.0
+celery==5.2.2
 certifi==2019.11.28
 chardet==3.0.4
 colorama==0.4.3
