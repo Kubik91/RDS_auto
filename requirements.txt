@@ -59,7 +59,7 @@ jupyter-core==4.6.3
 kiwisolver==1.1.0
 kombu==4.6.8
 lml==0.0.9
-lxml==4.5.0
+lxml==4.9.1
 markdown2==2.3.8
 MarkupSafe==1.1.1
 matplotlib==3.1.2
